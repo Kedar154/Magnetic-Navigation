@@ -17,6 +17,25 @@ Traditional Inertial Navigation Systems (INS) suffer from "drift" over time. Thi
 * **Neural Network Integration:** Uses an MLP Regressor to predict local magnetic variations.
 * **Live Dashboard:** A custom-built Flask/Chart.js telemetry suite to visualize GPS vs. INS vs. MagNav trajectories.
 
+* ## 🔍 Technical Deep Dive
+
+### The Problem: GPS Vulnerability & INS Drift
+In modern aviation, reliance on Global Navigation Satellite Systems (GNSS) is a single point of failure. While Inertial Navigation Systems (INS) provide an alternative, they suffer from **integration drift**, where small sensor errors accumulate into kilometers of positional uncertainty. 
+
+### What We Did
+We developed a secondary navigation layer that uses the Earth's magnetic field as a "map" to correct the INS.
+
+1. **Magnetic Cleaning (The Tolles-Abeley Model):** An aircraft is a magnetically "loud" environment. We used **Ridge Regression** to model the 18 coefficients of the Tolles-Abeley equation, effectively removing magnetic interference caused by the aircraft's maneuvers (Pitch, Roll, and Yaw).
+
+2. **Residual Anomaly Extraction:** By subtracting the **IGRF (Core Field)** from our compensated readings, we isolated the **Crustal Anomaly**. This small signal (~50-500 nT) is unique to specific geographic coordinates, allowing it to function as a landmark.
+
+3. **Sensor Fusion via EKF:** We implemented an **Extended Kalman Filter (EKF)**. The EKF uses the INS to *predict* the next state and uses the observed magnetic anomaly to *update* and correct that prediction.
+
+### Why We Did It
+* **Strategic Autonomy:** Magnetic navigation is passive and unjammable, unlike GPS which can be spoofed or blocked.
+* **Accuracy over Distance:** While INS error grows with time, MagNav error is bounded by the resolution of the magnetic map, providing a "truth" source that doesn't drift.
+* **Weight & Cost:** This system utilizes existing magnetometer hardware found on most aircraft, requiring only a software-level upgrade to implement.
+
 ## 🛠️ The Tech Stack
 
 * **Language:** Python 3.x
